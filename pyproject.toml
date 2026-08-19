@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Beam-MP-Server-Manager"
-version = "0.10.0"
+version = "0.11.0"
 description = "Self-hosted BeamMP server administration console"
 requires-python = ">=3.11"
 readme = "README.md"
