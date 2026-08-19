@@ -4,6 +4,14 @@
 
 **Current release:** `v0.11.0` · **License:** MIT · **Edition:** VMware / Debian 13 x86_64
 
+## Download
+
+### [⬇ Download the latest release](https://github.com/RominouVTJ/Beam-MP-Server-Manager/releases/latest)
+
+**VMware users:** download the three `.7z` parts from the release page, place them in the same folder, open `.7z.001` with 7-Zip, extract the OVA, then import it into VMware Workstation.
+
+[Latest release](https://github.com/RominouVTJ/Beam-MP-Server-Manager/releases/latest) · [v0.11.0 release](https://github.com/RominouVTJ/Beam-MP-Server-Manager/releases/tag/v0.11.0) · [English installation guide](docs/DEPLOYMENT_EN.md) · [Guide d'installation français](docs/DEPLOYMENT_FR.md)
+
 Beam-MP-Server-Manager packages a preconfigured Linux environment, BeamMP Server and a graphical Web Manager into one VMware appliance.
 
 **Import the VM, complete the guided First Run, enter your BeamMP AuthKey and manage the server from your browser.**
@@ -129,7 +137,7 @@ Start Server
 
 ## Download / VMware deployment
 
-Official binaries are published in **GitHub Releases**.
+**[⬇ Download the latest release](https://github.com/RominouVTJ/Beam-MP-Server-Manager/releases/latest)**
 
 For `v0.11.0`, download all three archive parts into the same folder:
 
@@ -147,6 +155,8 @@ Then:
 3. Import the OVA into VMware Workstation.
 4. Start the VM and complete the graphical First Run.
 5. Open the Manager and configure your BeamMP server.
+
+[Open the v0.11.0 release page](https://github.com/RominouVTJ/Beam-MP-Server-Manager/releases/tag/v0.11.0)
 
 Full guide: [VMware deployment in English](docs/DEPLOYMENT_EN.md)
 
@@ -238,7 +248,7 @@ Démarrer le serveur
 
 ## Téléchargement / installation VMware
 
-Les fichiers officiels sont publiés dans les **GitHub Releases**.
+**[⬇ Télécharger la dernière version](https://github.com/RominouVTJ/Beam-MP-Server-Manager/releases/latest)**
 
 Pour `v0.11.0`, téléchargez les trois parties dans le même dossier :
 
@@ -256,6 +266,8 @@ Ensuite :
 3. Importez l'OVA dans VMware Workstation.
 4. Démarrez la VM et terminez le First Run graphique.
 5. Ouvrez le Manager et configurez votre serveur BeamMP.
+
+[Ouvrir la page de la release v0.11.0](https://github.com/RominouVTJ/Beam-MP-Server-Manager/releases/tag/v0.11.0)
 
 Guide complet : [Déploiement VMware en français](docs/DEPLOYMENT_FR.md)
 
@@ -298,6 +310,7 @@ Voir [la préparation de l'architecture Windows Edition](docs/architecture/WINDO
 
 ## Project links
 
+- [Download latest release](https://github.com/RominouVTJ/Beam-MP-Server-Manager/releases/latest)
 - [v0.11.0 release notes](docs/releases/v0.11.0.md)
 - [Changelog](CHANGELOG.md)
 - [Contributing](CONTRIBUTING.md)
