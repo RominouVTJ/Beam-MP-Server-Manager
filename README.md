@@ -1,34 +1,106 @@
 # Beam-MP-Server-Manager
 
-> A self-hosted Web Manager for BeamMP. The current VMware Edition packages a preconfigured Debian server, BeamMP Server and the Manager into a ready-to-import appliance.
+> A ready-to-import VMware appliance and Web Manager for BeamMP servers.
 
-**Stable historical release:** `v0.10.0`
-**Current release:** `v0.11.0`
-**License:** MIT
-**Current edition:** VMware Edition · Debian 13 x86_64 · BeamMP · FastAPI
+**Current release:** `v0.11.0` · **License:** MIT · **Edition:** VMware / Debian 13 x86_64
+
+Beam-MP-Server-Manager packages a preconfigured Linux environment, BeamMP Server and a graphical Web Manager into one VMware appliance.
+
+**Import the VM, complete the guided First Run, enter your BeamMP AuthKey and manage the server from your browser.**
+
+No Python, Git, Docker, manual TOML editing or routine SSH usage is required for normal administration.
 
 [English](#english) · [Français](#français)
 
 ---
 
-## English
+## Screenshots
 
-### What is it?
+### Dashboard
+
+![Beam-MP-Server-Manager dashboard](docs/screenshots/dashboard.png)
+
+<table>
+<tr>
+<td width="50%">
+
+**Guided First Run**
+
+![First Run](docs/screenshots/first-run.png)
+
+</td>
+<td width="50%">
+
+**Appliance status**
+
+![Appliance status](docs/screenshots/appliance-status.png)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Maps**
+
+![Maps management](docs/screenshots/maps.png)
+
+</td>
+<td width="50%">
+
+**Vehicles**
+
+![Vehicle management](docs/screenshots/vehicles.png)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Server Live**
+
+![Server Live](docs/screenshots/live-server.png)
+
+</td>
+<td width="50%">
+
+**Backups**
+
+![Backups](docs/screenshots/backups.png)
+
+</td>
+</tr>
+</table>
+
+<details>
+<summary><strong>Settings</strong></summary>
+
+![Settings](docs/screenshots/settings.png)
+
+</details>
+
+---
+
+# English
+
+## What is it?
 
 Beam-MP-Server-Manager is an open-source administration interface for BeamMP servers.
 
-The current **VMware Edition** includes a preinstalled and preconfigured Linux environment, BeamMP Server and the Web Manager. Normal server administration is designed not to require SSH, Linux commands, manual TOML editing, Python, Git or Docker.
+The current **VMware Edition** includes:
 
-The project is being structured around **one core codebase and one Web UI**. A future native **Windows Edition** is planned without creating a separate fork.
-
-### VMware Edition
+- a preinstalled and preconfigured Debian environment;
+- BeamMP Server;
+- the Beam-MP-Server-Manager Web UI;
+- a graphical First Run assistant;
+- a local appliance status screen;
+- validated Manager updates with health checks and automatic rollback.
 
 Typical workflow:
 
 ```text
 Import OVA in VMware
         ↓
-First Run
+Complete First Run
         ↓
 Open Web Manager
         ↓
@@ -39,90 +111,69 @@ Configure BeamMP AuthKey / server / map
 Start Server
 ```
 
-Main features:
+## Main features
 
-- start, stop and restart BeamMP from the Web UI;
-- server dashboard and configuration;
-- BeamMP AuthKey management without exposing it in normal UI/log output;
-- official and modded map management;
-- vehicle and other ZIP mod management;
-- enable/disable client mod distribution;
-- protection for the currently selected modded map;
-- Web users and sessions;
-- backups and restore workflows;
-- Server Live player/vehicle/ping/speed/telemetry view;
-- server messages, kick and vehicle-removal Live controls;
-- official map thumbnails when local BeamNG preview assets are available;
-- bilingual French/English UI;
-- in-app **Bug / feature** reporting to GitHub with optional non-secret diagnostics;
-- from v0.11 onward, validated Manager self-update with health checks and automatic rollback.
+- Start, stop and restart BeamMP from the Web UI
+- Server dashboard and configuration
+- BeamMP AuthKey management
+- Official and modded map management
+- Vehicle and ZIP mod management
+- Enable / disable client mod distribution
+- Web users and sessions
+- Backups and restore workflows
+- Server Live player / vehicle / ping / speed view
+- Server messages, kick and vehicle-removal controls
+- French / English interface
+- In-app bug / feature reporting
+- Manager self-update with package validation, health checks and automatic rollback
 
-### Network ports
+## Download / VMware deployment
+
+Official binaries are published in **GitHub Releases**.
+
+For `v0.11.0`, download all three archive parts into the same folder:
+
+```text
+Beam-MP-Server-Manager-v0.11.0.7z.001
+Beam-MP-Server-Manager-v0.11.0.7z.002
+Beam-MP-Server-Manager-v0.11.0.7z.003
+Beam-MP-Server-Manager-v0.11.0-SHA256SUMS.txt
+```
+
+Then:
+
+1. Open `.7z.001` with 7-Zip.
+2. Extract `Beam-MP-Server-Manager-v0.11.0.ova`.
+3. Import the OVA into VMware Workstation.
+4. Start the VM and complete the graphical First Run.
+5. Open the Manager and configure your BeamMP server.
+
+Full guide: [VMware deployment in English](docs/DEPLOYMENT_EN.md)
+
+## Network ports
 
 - BeamMP: TCP + UDP `30814`
 - Web Manager: TCP `8765`
 
-The Web Manager should normally remain LAN-only. Do not expose port `8765` directly to the public Internet unless you deliberately deploy an appropriate secure reverse-proxy/access solution.
+The Web Manager should normally remain LAN-only. Do not expose port `8765` directly to the public Internet without an appropriate secure access layer.
 
-### Download / VMware deployment
+## Manager updates
 
-GitHub Releases is the official download source.
+`v0.11.0` is the first release containing the built-in Manager updater.
 
-Large VMware appliances are distributed as split 7-Zip archives when required. For v0.10.0 the expected files are:
-
-```text
-Beam-MP-Server-Manager-v0.10.0.7z.001
-Beam-MP-Server-Manager-v0.10.0.7z.002
-Beam-MP-Server-Manager-v0.10.0.7z.003
-Beam-MP-Server-Manager-v0.10.0-SHA256SUMS.txt
-```
-
-Download every part into the same folder, open `.7z.001` with 7-Zip, extract `Beam-MP-Server-Manager.ova`, then import the OVA into VMware Workstation.
-
-Full guides:
-
-- [English VMware deployment](docs/DEPLOYMENT_EN.md)
-- [Guide de déploiement VMware en français](docs/DEPLOYMENT_FR.md)
-
-### v0.10.0 historical note
-
-The original v0.10.0 OVA validated the BeamMP/Web/mod/telemetry functionality, but later testing found local-appliance defects in the graphical First Run/reboot path and in Linux maintenance-account creation. These defects are documented rather than hidden and are corrected on the v0.11 development line.
-
-See [v0.10.0 release notes](docs/releases/v0.10.0.md).
-
-### v0.11.0
-
-v0.11 adds/corrects:
-
-- reliable graphical First Run reboot/desktop path;
-- mandatory Linux maintenance-account creation in VMware First Run;
-- factory-reset execution detached safely from the maintenance session;
-- Manager self-update package validation, staged atomic install and rollback;
-- official GitHub Release update discovery with SHA-256 verification;
-- installed/available/last-update status in Settings;
-- in-app GitHub bug/feature reporting;
-- release-note policy and cross-platform CI;
-- architecture guardrails for the future native Windows Edition.
-
-The detailed draft is in [v0.11.0 release notes](docs/releases/v0.11.0.md). The release is not considered final until the disposable-appliance runtime gate described there passes.
-
-### Self-update policy
-
-The first appliance release containing the Web self-updater is v0.11.0. Therefore the historical v0.10.0 OVA cannot magically update itself to v0.11.0. Existing v0.10.0 installations use the documented replacement/maintenance upgrade route.
-
-Starting with v0.11.0, compatible future Manager releases can provide an asset named:
+Future compatible releases can provide:
 
 ```text
 Beam-MP-Server-Manager-vX.Y.Z.update.zip
 ```
 
-The Manager only offers an official one-click package when it can verify the expected GitHub Release asset and SHA-256 digest. A failed new Manager health check triggers automatic rollback.
+The Manager verifies the expected GitHub Release asset and SHA-256 digest before installation. If the new Manager fails its health checks, the appliance automatically restores the previous working version.
 
-### Future Windows Edition
+The historical `v0.10.0` appliance predates this updater and cannot self-bootstrap to `v0.11.0` through the Web UI.
 
-The Windows Edition is a planned native distribution, not a Linux VM hidden inside an installer.
+## Future Windows Edition
 
-Target architecture:
+A native Windows Edition is planned. It will reuse the same Web UI and core.
 
 ```text
 Web UI
@@ -132,63 +183,33 @@ FastAPI / Core
   └─ LocalWindowsBackend → Windows Edition (future)
 ```
 
-The intended Windows artifact is:
-
-```text
-Beam-MP-Server-Manager-vX.Y.Z-Windows-Setup.exe
-```
-
-End users should not need Python, Git, Docker, SSH or a terminal. See [Windows Edition architecture preparation](docs/architecture/WINDOWS_EDITION_PREPARATION.md).
-
-### Development
-
-Python 3.11+ is used for development.
-
-Windows example:
-
-```powershell
-py -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[dev,windows]"
-.\scripts\start.ps1
-```
-
-Tests:
-
-```powershell
-.\.venv\Scripts\python.exe -m pytest -q --basetemp .pytest-tmp
-```
-
-GitHub Actions runs the full suite on Linux and Windows.
-
-### Contributing / security
-
-- [Contributing](CONTRIBUTING.md)
-- [Security policy](SECURITY.md)
-- [Third-party notices](THIRD_PARTY_NOTICES.md)
-- [Changelog](CHANGELOG.md)
-
-Never publish BeamMP AuthKeys, passwords, appliance security codes, session cookies, private keys or unsanitized sensitive network information in an issue.
+See [Windows Edition architecture preparation](docs/architecture/WINDOWS_EDITION_PREPARATION.md).
 
 ---
 
-## Français
+# Français
 
-### Présentation
+## Présentation
 
-Beam-MP-Server-Manager est une interface d’administration open source pour les serveurs BeamMP.
+Beam-MP-Server-Manager est une interface d'administration open source pour les serveurs BeamMP.
 
-La **VMware Edition** actuelle fournit directement un environnement Debian Linux préinstallé et préconfiguré, BeamMP Server et le Web Manager. Pour l’utilisation normale, l’objectif est de ne pas avoir besoin de SSH, commandes Linux, édition manuelle du TOML, Python, Git ou Docker.
+La **VMware Edition** fournit directement :
 
-Le projet conserve **une seule base de code et une seule interface Web**. Une future **Windows Edition native** est prévue sans créer un fork séparé.
+- Debian préinstallé et préconfiguré ;
+- BeamMP Server ;
+- le Web Manager ;
+- un assistant graphique de première configuration ;
+- un écran local d'état de la machine ;
+- les mises à jour validées du Manager avec contrôle de santé et rollback automatique.
 
-### VMware Edition
+Pour l'utilisation normale, l'objectif est de ne pas avoir besoin de Python, Git, Docker, d'édition manuelle du TOML ni de commandes SSH.
 
 Parcours normal :
 
 ```text
 Importer l'OVA dans VMware
         ↓
-First Run
+Terminer le First Run
         ↓
 Ouvrir le Web Manager
         ↓
@@ -196,81 +217,72 @@ Créer l'administrateur Web
         ↓
 Configurer AuthKey / serveur / carte
         ↓
-Start Server
+Démarrer le serveur
 ```
 
-Fonctions principales :
+## Fonctions principales
 
-- démarrage, arrêt et redémarrage de BeamMP depuis le navigateur ;
-- tableau de bord et configuration du serveur ;
-- gestion de l’AuthKey BeamMP ;
-- cartes officielles et moddées ;
-- véhicules et autres mods ZIP ;
-- activation/désactivation de la distribution aux clients ;
-- protection de la carte moddée actuellement utilisée ;
-- utilisateurs et sessions Web ;
-- sauvegardes et restauration ;
-- vue Live joueurs/véhicules/ping/vitesse/télémétrie ;
-- message serveur, kick et suppression de véhicule ;
-- miniatures des cartes officielles lorsque les aperçus BeamNG locaux sont disponibles ;
-- interface français/anglais ;
-- bouton **Bug / suggestion** vers GitHub avec diagnostics non sensibles optionnels ;
-- à partir de v0.11, auto-update validé du Manager avec contrôle de santé et rollback automatique.
+- Démarrage, arrêt et redémarrage de BeamMP depuis le navigateur
+- Tableau de bord et configuration du serveur
+- Gestion de l'AuthKey BeamMP
+- Gestion des cartes officielles et moddées
+- Gestion des véhicules et mods ZIP
+- Activation / désactivation de la distribution des mods aux joueurs
+- Utilisateurs et sessions Web
+- Sauvegardes et restauration
+- Vue Server Live des joueurs, véhicules, ping et vitesse
+- Messages serveur, expulsion et suppression de véhicule
+- Interface français / anglais
+- Signalement de bug / suggestion depuis l'interface
+- Mise à jour du Manager avec validation, contrôle de santé et rollback automatique
 
-### Ports réseau
+## Téléchargement / installation VMware
+
+Les fichiers officiels sont publiés dans les **GitHub Releases**.
+
+Pour `v0.11.0`, téléchargez les trois parties dans le même dossier :
+
+```text
+Beam-MP-Server-Manager-v0.11.0.7z.001
+Beam-MP-Server-Manager-v0.11.0.7z.002
+Beam-MP-Server-Manager-v0.11.0.7z.003
+Beam-MP-Server-Manager-v0.11.0-SHA256SUMS.txt
+```
+
+Ensuite :
+
+1. Ouvrez `.7z.001` avec 7-Zip.
+2. Extrayez `Beam-MP-Server-Manager-v0.11.0.ova`.
+3. Importez l'OVA dans VMware Workstation.
+4. Démarrez la VM et terminez le First Run graphique.
+5. Ouvrez le Manager et configurez votre serveur BeamMP.
+
+Guide complet : [Déploiement VMware en français](docs/DEPLOYMENT_FR.md)
+
+## Ports réseau
 
 - BeamMP : TCP + UDP `30814`
 - Web Manager : TCP `8765`
 
-Le Web Manager doit normalement rester accessible uniquement sur le réseau local. Ne redirigez pas directement le port `8765` sur Internet pour une utilisation standard.
+Le Web Manager doit normalement rester accessible uniquement sur le réseau local. N'exposez pas directement le port `8765` sur Internet sans couche d'accès sécurisée adaptée.
 
-### Téléchargement / installation VMware
+## Mises à jour du Manager
 
-Les GitHub Releases sont la source officielle de téléchargement.
+`v0.11.0` est la première version intégrant le système de mise à jour du Manager.
 
-Lorsque l’OVA est trop volumineuse, elle est distribuée en archive 7-Zip découpée. Pour v0.10.0 :
+Les versions futures compatibles peuvent fournir :
 
 ```text
-Beam-MP-Server-Manager-v0.10.0.7z.001
-Beam-MP-Server-Manager-v0.10.0.7z.002
-Beam-MP-Server-Manager-v0.10.0.7z.003
-Beam-MP-Server-Manager-v0.10.0-SHA256SUMS.txt
+Beam-MP-Server-Manager-vX.Y.Z.update.zip
 ```
 
-Téléchargez toutes les parties dans le même dossier, ouvrez `.7z.001` avec 7-Zip, extrayez `Beam-MP-Server-Manager.ova`, puis importez l’OVA dans VMware Workstation.
+Le Manager vérifie l'asset GitHub Release attendu et son SHA-256 avant installation. Si la nouvelle version échoue à ses contrôles de santé, l'ancienne version fonctionnelle est restaurée automatiquement.
 
-Guides complets :
+L'ancienne appliance `v0.10.0` est antérieure à ce système et ne peut donc pas se mettre elle-même à niveau vers `v0.11.0` depuis l'interface Web.
 
-- [Déploiement VMware en français](docs/DEPLOYMENT_FR.md)
-- [English VMware deployment](docs/DEPLOYMENT_EN.md)
+## Future Windows Edition
 
-### Note historique v0.10.0
-
-L’OVA v0.10.0 originale a validé les fonctions serveur/Web/mods/télémétrie, mais des défauts locaux ont ensuite été découverts dans le reboot/desktop du First Run graphique et dans la création du compte Linux de maintenance. Ces défauts sont documentés et corrigés sur la branche v0.11.
-
-Voir [les notes v0.10.0](docs/releases/v0.10.0.md).
-
-### v0.11.0
-
-v0.11 apporte notamment :
-
-- correction du parcours graphique First Run et du reboot automatique ;
-- création obligatoire du compte Linux de maintenance dans la VMware Edition ;
-- factory reset détaché de la session de maintenance ;
-- mise à jour du Manager avec validation, installation atomique et rollback ;
-- détection de la GitHub Release officielle avec vérification SHA-256 ;
-- versions installée/disponible et dernier résultat dans Settings ;
-- signalement de bug / proposition de fonction vers GitHub ;
-- politique de release notes et CI Linux/Windows ;
-- préparation architecturale de la future Windows Edition native.
-
-Le détail est dans [les notes v0.11.0](docs/releases/v0.11.0.md). La version ne sera considérée finale qu’après le dernier test runtime sur appliance jetable.
-
-### Future Windows Edition
-
-La Windows Edition sera une installation Windows native, sans VM Linux.
-
-Objectif :
+Une **Windows Edition native** est prévue. Elle réutilisera la même interface Web et le même cœur applicatif.
 
 ```text
 Web UI
@@ -280,16 +292,20 @@ FastAPI / Core
   └─ LocalWindowsBackend → Windows Edition (future)
 ```
 
-Installateur prévu :
+Voir [la préparation de l'architecture Windows Edition](docs/architecture/WINDOWS_EDITION_PREPARATION.md).
 
-```text
-Beam-MP-Server-Manager-vX.Y.Z-Windows-Setup.exe
-```
+---
 
-L’utilisateur final ne devra installer ni Python, ni Git, ni Docker et ne devra utiliser ni SSH ni terminal pour l’usage normal.
+## Project links
 
-Voir [la préparation de l’architecture Windows Edition](docs/architecture/WINDOWS_EDITION_PREPARATION.md).
+- [v0.11.0 release notes](docs/releases/v0.11.0.md)
+- [Changelog](CHANGELOG.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Third-party notices](THIRD_PARTY_NOTICES.md)
 
-### Open source
+## License
 
-Beam-MP-Server-Manager est distribué sous licence MIT. Les binaires BeamMP Server et les ressources BeamNG restent des composants tiers soumis à leurs propres conditions. Les ressources officielles BeamNG ne sont pas redistribuées dans ce dépôt.
+Beam-MP-Server-Manager is released under the **MIT License**.
+
+BeamMP Server binaries and BeamNG assets remain third-party components subject to their respective terms and are not relicensed by this repository.
