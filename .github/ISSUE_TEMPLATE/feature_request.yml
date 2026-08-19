@@ -1,0 +1,44 @@
+name: Feature request
+description: Suggest an improvement or new capability
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the user problem first, then the desired behavior. This keeps the project focused on useful features instead of collecting shiny buttons for sport.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or need
+      description: What are you trying to achieve, and what is difficult today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: What should Beam-MP-Server-Manager do?
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Relevant edition
+      options:
+        - Common / all editions
+        - VMware Edition
+        - Windows Edition
+        - Not sure
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Mockups, examples and related workflows are welcome.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I checked that this request contains no AuthKey, password, appliance security code, cookie or other secret.
+          required: true

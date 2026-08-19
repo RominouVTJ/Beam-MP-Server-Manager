@@ -1,0 +1,43 @@
+[Unit]
+Description=Beam appliance First Run wizard
+Documentation=file:/opt/beam-manager/docs/appliance/FIRST_RUN.md
+DefaultDependencies=no
+After=local-fs.target systemd-tmpfiles-setup.service keyboard-setup.service run-vmblock\x2dfuse.mount
+Wants=local-fs.target keyboard-setup.service run-vmblock\x2dfuse.mount
+Before=getty@tty1.service getty.target shutdown.target
+Conflicts=getty@tty1.service shutdown.target
+ConditionPathExists=!/var/lib/beam-appliance/firstboot-complete
+
+[Service]
+Type=simple
+ExecStartPre=/usr/bin/chvt 1
+ExecStart=/usr/bin/xinit /usr/local/libexec/beam-firstboot-xsession -- /usr/lib/xorg/Xorg :0 vt1 -keeptty -nolisten tcp -noreset
+Restart=on-failure
+RestartSec=2
+KillMode=control-group
+StandardInput=tty-force
+StandardOutput=journal
+StandardError=journal
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+UtmpIdentifier=tty1
+UtmpMode=user
+Environment=PYTHONUNBUFFERED=1
+Environment=DISPLAY=:0
+Environment=HOME=/var/lib/beam-appliance
+SyslogIdentifier=beam-appliance-firstboot
+User=root
+Group=root
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictRealtime=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=sysinit.target

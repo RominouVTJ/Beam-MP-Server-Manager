@@ -1,0 +1,26 @@
+#!/bin/sh
+set -eu
+
+MARKER=/var/lib/beam-appliance/identity-pending
+[ -e "$MARKER" ] || exit 0
+if [ "$(id -u)" -ne 0 ]; then
+    echo "Identity regeneration must run as root" >&2
+    exit 1
+fi
+
+# Commit a unique machine-id for this deployed appliance instance.
+/usr/bin/systemd-machine-id-setup >/dev/null
+/bin/test -s /etc/machine-id
+
+# The image deliberately ships without SSH host private keys.
+/bin/rm -f -- /etc/ssh/ssh_host_*
+/usr/bin/ssh-keygen -A >/dev/null
+/bin/test -s /etc/ssh/ssh_host_ed25519_key
+
+# The development source may have ssh.service running without being enabled.
+# A fresh imported appliance must expose SSH after First Run so the maintenance
+# account created by the owner is actually usable after the automatic reboot.
+/usr/bin/systemctl enable ssh.service >/dev/null
+/usr/bin/systemctl is-enabled --quiet ssh.service
+
+/bin/rm -f -- "$MARKER"

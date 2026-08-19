@@ -1,0 +1,337 @@
+#!/bin/sh
+set -eu
+
+STAGING_ROOT=/var/lib/beam-manager/appliance-updates/staged
+STATE_DIR=/var/lib/beam-appliance/update
+CURRENT=/opt/beam-manager
+NEXT=/opt/beam-manager.next
+PREVIOUS=/opt/beam-manager.previous
+PREVIOUS_DATA="$STATE_DIR/previous-data"
+PREVIOUS_SUPPORT="$STATE_DIR/previous-support"
+LOCK=/run/beam-appliance-update.lock
+
+fail() {
+    /bin/echo "$1" >&2
+    exit "${2:-1}"
+}
+
+read_version() {
+    /usr/bin/python3 - "$1" <<'PY'
+import pathlib
+import sys
+import tomllib
+path = pathlib.Path(sys.argv[1]) / "pyproject.toml"
+try:
+    data = tomllib.loads(path.read_text(encoding="utf-8"))
+    value = data["project"]["version"]
+except Exception:
+    raise SystemExit(1)
+if not isinstance(value, str) or not value.strip():
+    raise SystemExit(1)
+print(value.strip())
+PY
+}
+
+assert_safe_tree() {
+    root="$1"
+    [ -d "$root" ] || fail "Update source tree is missing"
+    [ -f "$root/pyproject.toml" ] || fail "Update source tree has no pyproject.toml"
+    [ -d "$root/beam_manager" ] || fail "Update source tree has no beam_manager package"
+    [ -d "$root/appliance" ] || fail "Update source tree has no appliance directory"
+    unsafe="$(/usr/bin/find "$root" -xdev ! -type d ! -type f -print -quit)"
+    [ -z "$unsafe" ] || fail "Update source tree contains a non-regular entry"
+}
+
+write_result() {
+    status="$1"
+    target="$2"
+    previous="$3"
+    message="$4"
+    /usr/bin/install -d -o root -g root -m 0755 "$STATE_DIR"
+    /usr/bin/python3 - "$STATE_DIR/last-result.json" "$status" "$target" "$previous" "$message" <<'PY'
+from datetime import datetime, timezone
+import json
+import pathlib
+import sys
+path = pathlib.Path(sys.argv[1])
+payload = {
+    "status": sys.argv[2],
+    "target_version": sys.argv[3],
+    "previous_version": sys.argv[4],
+    "message": sys.argv[5],
+    "updated_at": datetime.now(timezone.utc).isoformat(),
+}
+tmp = path.with_suffix(".tmp")
+tmp.write_text(json.dumps(payload, separators=(",", ":")) + "\n", encoding="utf-8")
+tmp.replace(path)
+PY
+    /bin/chown root:root "$STATE_DIR/last-result.json"
+    /bin/chmod 0644 "$STATE_DIR/last-result.json"
+}
+
+healthy_version() {
+    expected="$1"
+    /usr/bin/python3 - "$expected" <<'PY'
+import json
+import sys
+import urllib.request
+expected = sys.argv[1]
+try:
+    with urllib.request.urlopen("http://127.0.0.1:8765/api/health", timeout=2) as response:
+        health = json.load(response)
+    with urllib.request.urlopen("http://127.0.0.1:8765/api/appliance/version", timeout=2) as response:
+        version = json.load(response)
+except Exception:
+    raise SystemExit(1)
+if health.get("manager") != "ok" or health.get("database") != "ok" or health.get("filesystem") != "ok":
+    raise SystemExit(1)
+if version.get("product") != "Beam-MP-Server-Manager" or version.get("version") != expected:
+    raise SystemExit(1)
+PY
+}
+
+wait_healthy_version() {
+    expected="$1"
+    attempt=0
+    while [ "$attempt" -lt 30 ]; do
+        if healthy_version "$expected"; then
+            return 0
+        fi
+        attempt=$((attempt + 1))
+        /bin/sleep 2
+    done
+    return 1
+}
+
+backup_support_one() {
+    target="$1"
+    key="$2"
+    if [ -e "$target" ]; then
+        /bin/cp -a "$target" "$PREVIOUS_SUPPORT/$key" || return 1
+    else
+        /usr/bin/touch "$PREVIOUS_SUPPORT/$key.missing" || return 1
+    fi
+}
+
+backup_support() {
+    /bin/rm -rf -- "$PREVIOUS_SUPPORT" || return 1
+    /usr/bin/install -d -o root -g root -m 0700 "$PREVIOUS_SUPPORT" || return 1
+    backup_support_one /usr/local/sbin/beam-appliance-apply-update updater || return 1
+    backup_support_one /usr/local/sbin/beam-appliance-prepare-image factory-reset || return 1
+    backup_support_one /usr/local/libexec/beam-appliance-regenerate-identity regenerate-identity || return 1
+    backup_support_one /usr/local/libexec/beammp-authkey-configured authkey-condition || return 1
+    backup_support_one /usr/local/libexec/beam-appliance-firstboot firstboot-python || return 1
+    backup_support_one /usr/local/libexec/beam-firstboot-xsession firstboot-xsession || return 1
+    backup_support_one /usr/local/libexec/beam_console_status.py console-status || return 1
+    backup_support_one /usr/local/libexec/beam-appliance-desktop appliance-desktop || return 1
+    backup_support_one /usr/local/libexec/beam-appliance-desktop-session appliance-desktop-session || return 1
+    backup_support_one /etc/sudoers.d/beam-manager manager-sudoers || return 1
+}
+
+install_support() {
+    # Deliberately narrow whitelist. Generic OS infrastructure such as systemd
+    # units, LightDM, GRUB, SSH and firewall policy stays OVA/provisioning-only.
+    /usr/bin/install -o root -g root -m 0755 "$CURRENT/appliance/update/beam-appliance-apply-update" /usr/local/sbin/beam-appliance-apply-update || return 1
+    /usr/bin/install -o root -g root -m 0755 "$CURRENT/appliance/factory-reset/beam-appliance-prepare-image" /usr/local/sbin/beam-appliance-prepare-image || return 1
+    /usr/bin/install -o root -g root -m 0755 "$CURRENT/appliance/factory-reset/beam-appliance-regenerate-identity" /usr/local/libexec/beam-appliance-regenerate-identity || return 1
+    /usr/bin/install -o root -g root -m 0755 "$CURRENT/appliance/provisioning/beammp-authkey-configured" /usr/local/libexec/beammp-authkey-configured || return 1
+    /usr/bin/install -o root -g root -m 0755 "$CURRENT/appliance/firstboot/beam_firstboot_entry.py" /usr/local/libexec/beam-appliance-firstboot || return 1
+    /usr/bin/install -o root -g root -m 0755 "$CURRENT/appliance/firstboot/beam_firstboot_xsession.sh" /usr/local/libexec/beam-firstboot-xsession || return 1
+    /usr/bin/install -o root -g root -m 0755 "$CURRENT/appliance/firstboot/beam_console_status.py" /usr/local/libexec/beam_console_status.py || return 1
+    /usr/bin/install -o root -g root -m 0755 "$CURRENT/appliance/desktop/beam_appliance_desktop.py" /usr/local/libexec/beam-appliance-desktop || return 1
+    /usr/bin/install -o root -g root -m 0755 "$CURRENT/appliance/desktop/beam_appliance_desktop_session.sh" /usr/local/libexec/beam-appliance-desktop-session || return 1
+    /usr/bin/install -o root -g root -m 0440 "$CURRENT/appliance/config/beam-manager.sudoers" /etc/sudoers.d/beam-manager || return 1
+
+    /usr/sbin/visudo -c >/dev/null || return 1
+    /bin/sh -n /usr/local/sbin/beam-appliance-apply-update || return 1
+    /bin/sh -n /usr/local/sbin/beam-appliance-prepare-image || return 1
+    /bin/sh -n /usr/local/libexec/beam-appliance-regenerate-identity || return 1
+    /bin/sh -n /usr/local/libexec/beammp-authkey-configured || return 1
+    /bin/sh -n /usr/local/libexec/beam-firstboot-xsession || return 1
+    /bin/sh -n /usr/local/libexec/beam-appliance-desktop-session || return 1
+    /usr/bin/python3 - /usr/local/libexec/beam-appliance-firstboot /usr/local/libexec/beam_console_status.py /usr/local/libexec/beam-appliance-desktop <<'PY' || return 1
+import pathlib
+import sys
+for value in sys.argv[1:]:
+    path = pathlib.Path(value)
+    compile(path.read_text(encoding="utf-8"), str(path), "exec")
+PY
+}
+
+restore_support_one() {
+    target="$1"
+    key="$2"
+    if [ -f "$PREVIOUS_SUPPORT/$key.missing" ]; then
+        /bin/rm -f -- "$target" || return 1
+        return 0
+    fi
+    [ -e "$PREVIOUS_SUPPORT/$key" ] || return 1
+    /bin/cp -a "$PREVIOUS_SUPPORT/$key" "$target" || return 1
+}
+
+restore_support() {
+    [ -d "$PREVIOUS_SUPPORT" ] || return 1
+    restore_support_one /usr/local/sbin/beam-appliance-apply-update updater || return 1
+    restore_support_one /usr/local/sbin/beam-appliance-prepare-image factory-reset || return 1
+    restore_support_one /usr/local/libexec/beam-appliance-regenerate-identity regenerate-identity || return 1
+    restore_support_one /usr/local/libexec/beammp-authkey-configured authkey-condition || return 1
+    restore_support_one /usr/local/libexec/beam-appliance-firstboot firstboot-python || return 1
+    restore_support_one /usr/local/libexec/beam-firstboot-xsession firstboot-xsession || return 1
+    restore_support_one /usr/local/libexec/beam_console_status.py console-status || return 1
+    restore_support_one /usr/local/libexec/beam-appliance-desktop appliance-desktop || return 1
+    restore_support_one /usr/local/libexec/beam-appliance-desktop-session appliance-desktop-session || return 1
+    restore_support_one /etc/sudoers.d/beam-manager manager-sudoers || return 1
+    /usr/sbin/visudo -c >/dev/null || return 1
+}
+
+rollback_application_and_data() {
+    /usr/bin/systemctl stop beam-manager.service >/dev/null 2>/dev/null || true
+    failed="$STATE_DIR/failed-$target_version-$(/bin/date +%s)"
+    if [ -d "$CURRENT" ]; then
+        /bin/mv "$CURRENT" "$failed" || return 1
+    fi
+    [ -d "$PREVIOUS" ] || return 1
+    /bin/mv "$PREVIOUS" "$CURRENT" || return 1
+    if [ -d "$PREVIOUS_DATA" ]; then
+        /bin/rm -rf -- /var/lib/beam-manager || return 1
+        /bin/cp -a "$PREVIOUS_DATA" /var/lib/beam-manager || return 1
+    fi
+    /usr/bin/systemctl start beam-manager.service || return 1
+    if wait_healthy_version "$previous_version"; then
+        /bin/rm -rf -- "$incoming" "$failed"
+        return 0
+    fi
+    return 1
+}
+
+if [ "$(id -u)" -ne 0 ]; then
+    fail "Appliance update helper must run as root" 1
+fi
+
+if [ "${1:-}" != "--worker" ]; then
+    source_root="${1:-}"
+    target_version="${2:-}"
+    [ -n "$source_root" ] && [ -n "$target_version" ] || fail "Usage: beam-appliance-apply-update STAGED_SOURCE TARGET_VERSION" 2
+
+    /usr/bin/install -d -o beammanager -g beammanager -m 0700 "$STAGING_ROOT"
+    /usr/bin/install -d -o root -g root -m 0755 "$STATE_DIR"
+    staging_real="$(/usr/bin/readlink -f "$STAGING_ROOT")"
+    source_real="$(/usr/bin/readlink -f "$source_root")" || fail "Update source tree does not exist" 2
+    case "$source_real" in
+        "$staging_real"/*) ;;
+        *) fail "Update source must be inside the appliance update staging directory" 2 ;;
+    esac
+
+    assert_safe_tree "$source_real"
+    payload_version="$(read_version "$source_real")" || fail "Cannot read staged update version" 2
+    [ "$payload_version" = "$target_version" ] || fail "Staged update version does not match requested target" 2
+
+    # Freeze the validated staging tree before copying it into root-owned state.
+    # This closes the race between the Web service and the detached worker.
+    /bin/chown -R root:root "$source_real"
+    /usr/bin/find "$source_real" -xdev -type f -exec /bin/chmod a-s {} +
+    assert_safe_tree "$source_real"
+
+    incoming="$(/usr/bin/mktemp -d "$STATE_DIR/incoming.XXXXXX")"
+    /bin/cp -a "$source_real/." "$incoming/"
+    /bin/chown -R root:root "$incoming"
+    /bin/rm -rf -- "$source_real"
+    assert_safe_tree "$incoming"
+    copied_version="$(read_version "$incoming")" || fail "Cannot read copied update version" 2
+    [ "$copied_version" = "$target_version" ] || fail "Copied update version changed during handoff" 2
+
+    self="$(/usr/bin/readlink -f "$0")"
+    unit="beam-appliance-update-$$"
+    /usr/bin/systemd-run --quiet --collect --unit="$unit" --on-active=2s \
+        "$self" --worker "$incoming" "$target_version"
+    /bin/echo "Beam-MP-Server-Manager update scheduled in detached system service"
+    /bin/echo "The Web request may disconnect while the Manager restarts."
+    exit 0
+fi
+
+incoming="${2:-}"
+target_version="${3:-}"
+[ -n "$incoming" ] && [ -n "$target_version" ] || fail "Invalid update worker invocation" 2
+case "$incoming" in
+    "$STATE_DIR"/incoming.*) ;;
+    *) fail "Update worker source is outside root-owned state" 2 ;;
+esac
+assert_safe_tree "$incoming"
+[ "$(read_version "$incoming")" = "$target_version" ] || fail "Update worker version mismatch" 2
+
+exec 9>"$LOCK"
+/usr/bin/flock -n 9 || fail "Another appliance update is already running" 3
+
+previous_version="$(read_version "$CURRENT")" || fail "Cannot read installed Manager version" 4
+write_result "preparing" "$target_version" "$previous_version" "Preparing candidate installation"
+
+/bin/rm -rf -- "$NEXT"
+/usr/bin/install -d -o root -g root -m 0755 "$NEXT"
+/bin/cp -a "$incoming/." "$NEXT/"
+/bin/rm -rf -- "$NEXT/.git" "$NEXT/data" "$NEXT/build" "$NEXT/dist" "$NEXT/.venv"
+assert_safe_tree "$NEXT"
+
+# Building a Python package can execute project-controlled build hooks. Run it
+# as the unprivileged Manager account, never as root, then freeze the result.
+/bin/chown -R beammanager:beammanager "$NEXT"
+/usr/sbin/runuser -u beammanager -- /usr/bin/python3 -m venv "$NEXT/.venv"
+/usr/sbin/runuser -u beammanager -- "$NEXT/.venv/bin/python" -m pip install \
+    --disable-pip-version-check --no-cache-dir "$NEXT"
+installed_version="$(/usr/sbin/runuser -u beammanager -- "$NEXT/.venv/bin/python" -c 'import beam_manager; print(beam_manager.__version__)')"
+[ "$installed_version" = "$target_version" ] || fail "Candidate package version does not match target" 5
+/bin/chown -R root:root "$NEXT"
+/bin/chmod -R go-w "$NEXT"
+/bin/chmod 0755 "$NEXT"
+/usr/sbin/runuser -u beammanager -- /usr/bin/test -x "$NEXT/.venv/bin/beam-manager"
+
+# Detachment happened before this point. It is now safe to stop the Manager
+# without killing the update worker that was launched by the Manager itself.
+/usr/bin/systemctl stop beam-manager.service
+
+/bin/rm -rf -- "$PREVIOUS_DATA"
+/bin/cp -a /var/lib/beam-manager "$PREVIOUS_DATA"
+/bin/rm -rf -- "$PREVIOUS_DATA/appliance-updates"
+/bin/rm -rf -- "$PREVIOUS"
+/bin/mv "$CURRENT" "$PREVIOUS"
+/bin/mv "$NEXT" "$CURRENT"
+
+/usr/bin/systemctl start beam-manager.service
+if ! wait_healthy_version "$target_version"; then
+    write_result "rolling_back" "$target_version" "$previous_version" "New Manager did not become healthy; restoring previous version"
+    if rollback_application_and_data; then
+        write_result "rolled_back" "$target_version" "$previous_version" "Update failed; previous application and Manager data restored"
+        fail "Update failed health validation and was rolled back successfully" 7
+    fi
+    write_result "rollback_failed" "$target_version" "$previous_version" "Update and automatic rollback both failed health validation"
+    fail "Update failed and automatic rollback did not restore a healthy Manager" 8
+fi
+
+write_result "syncing_support" "$target_version" "$previous_version" "Manager is healthy; updating whitelisted appliance support helpers"
+support_backed_up=0
+support_installed=0
+if backup_support; then
+    support_backed_up=1
+    if install_support; then
+        support_installed=1
+    fi
+fi
+if [ "$support_installed" -ne 1 ]; then
+    write_result "rolling_back" "$target_version" "$previous_version" "Support helper validation failed; restoring previous application and support files"
+    support_ok=1
+    if [ "$support_backed_up" -eq 1 ]; then
+        restore_support || support_ok=0
+    fi
+    app_ok=1
+    rollback_application_and_data || app_ok=0
+    if [ "$support_ok" -eq 1 ] && [ "$app_ok" -eq 1 ]; then
+        write_result "rolled_back" "$target_version" "$previous_version" "Support update failed; previous application, data and support helpers restored"
+        fail "Update support validation failed and was rolled back successfully" 9
+    fi
+    write_result "rollback_failed" "$target_version" "$previous_version" "Support update failed and automatic rollback was incomplete"
+    fail "Update support validation failed and automatic rollback was incomplete" 10
+fi
+
+/bin/rm -rf -- "$incoming"
+write_result "success" "$target_version" "$previous_version" "Update installed, Manager health check passed and support helpers were synchronized"
+/bin/echo "SUCCESS / APPLIANCE UPDATE INSTALLED / version=$target_version"
+exit 0

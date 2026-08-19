@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Disabled appliance light locker
+Hidden=true
+X-GNOME-Autostart-enabled=false

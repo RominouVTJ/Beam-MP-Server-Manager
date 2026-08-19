@@ -1,0 +1,33 @@
+[Unit]
+Description=Beam-MP-Server-Manager
+Wants=network-online.target
+After=network-online.target beammp.service
+
+[Service]
+Type=simple
+User=beammanager
+# Shared BeamMP content is owned through beamadmin. Keep beammanager as a
+# supplementary group for private Manager config/state compatibility.
+Group=beamadmin
+SupplementaryGroups=beammanager
+WorkingDirectory=/
+EnvironmentFile=/etc/beam-manager/beam-manager.env
+ExecStart=/opt/beam-manager/.venv/bin/beam-manager serve
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=20s
+# New shared ZIPs must be group-readable/writable by beammpserver.
+UMask=0007
+PrivateTmp=true
+PrivateDevices=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/beam-manager /var/log/beam-manager /opt/beammp
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+StandardOutput=append:/var/log/beam-manager/beam-manager.log
+StandardError=append:/var/log/beam-manager/beam-manager.log
+
+[Install]
+WantedBy=multi-user.target

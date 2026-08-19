@@ -1,0 +1,2 @@
+Cmnd_Alias BEAM_MANAGER_SYSTEMD = /usr/bin/systemctl start beammp.service, /usr/bin/systemctl stop beammp.service, /usr/bin/systemctl restart beammp.service, /usr/bin/systemctl is-active beammp.service
+beammanager ALL=(root) NOPASSWD: BEAM_MANAGER_SYSTEMD

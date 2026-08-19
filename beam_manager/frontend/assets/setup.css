@@ -1,0 +1,24 @@
+.setup-body { min-height: 100vh; background: var(--core-bg); color: var(--core-text); }
+.setup-shell { width: min(760px, calc(100% - 32px)); margin: 0 auto; padding: 32px 0 64px; }
+.setup-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.setup-preferences { display:flex; align-items:center; justify-content:flex-end; gap:14px; flex-wrap:wrap; }
+.setup-themes { display:flex; align-items:center; gap:5px; border:0; padding:0; margin:0; }
+.setup-themes legend { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+.setup-themes button { min-height:34px; padding:0 9px; border:1px solid var(--core-border); border-radius:8px; color:var(--core-muted); background:var(--core-surface-2); }
+.setup-themes button[aria-pressed="true"] { border-color:var(--core-accent); color:var(--core-accent); }
+.setup-language { display: flex; align-items: center; gap: 10px; font-size: .78rem; color: var(--core-muted); }
+.setup-language select { width: auto; }
+.setup-intro { margin: 56px 0 28px; }
+.setup-intro h1 { margin: 8px 0 12px; font-size: clamp(2rem, 7vw, 3.7rem); line-height: 1; }
+.setup-intro p:last-child { max-width: 640px; color: var(--core-muted); }
+.setup-progress { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0; margin: 0 0 16px; list-style: none; }
+.setup-progress li { display: flex; align-items: center; gap: 8px; padding: 12px; border: 1px solid var(--core-border); border-radius: 10px; color: var(--core-muted); }
+.setup-progress li b { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--core-surface-2); }
+.setup-progress li.active { color: var(--core-text); border-color: var(--core-accent); }
+.setup-progress li.done b { background: var(--core-accent); color: #071008; }
+.setup-card { display: grid; gap: 18px; padding: clamp(20px, 5vw, 38px); border: 1px solid var(--core-border); border-radius: 14px; background: var(--core-surface); box-shadow: var(--core-shadow); }
+.setup-card h2, .setup-card p { margin: 0; }
+.setup-card p { color: var(--core-muted); }
+.setup-card .primary-button { justify-self: end; }
+@media (max-width: 700px) { .setup-header { align-items:flex-start; flex-direction:column; } .setup-preferences { justify-content:flex-start; } }
+@media (max-width: 560px) { .setup-progress li span { display: none; } .setup-progress li { justify-content: center; } }

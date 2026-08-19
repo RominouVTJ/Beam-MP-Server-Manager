@@ -1,0 +1,15 @@
+[Unit]
+Description=LAN-only firewall for Beam-MP-Server-Manager
+Before=beam-manager.service
+After=network-pre.target
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+ExecStartPre=-/usr/sbin/nft delete table inet beam_manager
+ExecStart=/usr/sbin/nft -f /etc/beam-manager/firewall.nft
+ExecStop=/usr/sbin/nft delete table inet beam_manager
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

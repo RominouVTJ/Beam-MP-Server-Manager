@@ -1,0 +1,8 @@
+table inet beam_manager {
+    chain input {
+        type filter hook input priority -10; policy accept;
+        iifname "lo" tcp dport @MANAGER_PORT@ accept
+        ip saddr @MANAGER_LAN_NETWORK@ tcp dport @MANAGER_PORT@ accept
+        tcp dport @MANAGER_PORT@ drop
+    }
+}

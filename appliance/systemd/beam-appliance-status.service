@@ -1,0 +1,38 @@
+[Unit]
+Description=Beam appliance legacy text console status
+After=local-fs.target network.target beam-manager.service
+Wants=beam-manager.service
+Conflicts=getty@tty1.service
+ConditionPathExists=/var/lib/beam-appliance/legacy-text-console-enabled
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/local/libexec/beam_console_status.py --watch
+Restart=always
+RestartSec=3
+StandardInput=tty
+StandardOutput=tty
+StandardError=tty
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+UtmpIdentifier=tty1
+UtmpMode=user
+Environment=PYTHONUNBUFFERED=1
+User=beammanager
+Group=beammanager
+SupplementaryGroups=beamadmin
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+RestrictRealtime=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target

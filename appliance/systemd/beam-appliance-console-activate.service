@@ -1,0 +1,15 @@
+[Unit]
+Description=Show the Beam appliance console on the active virtual terminal
+After=display-manager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/chvt 1
+User=root
+Group=root
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+
+[Install]
+WantedBy=graphical.target

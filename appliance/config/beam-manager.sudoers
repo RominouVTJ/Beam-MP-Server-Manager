@@ -1,0 +1,3 @@
+Cmnd_Alias BEAMMP_SERVICE = /usr/bin/systemctl start beammp.service, /usr/bin/systemctl stop beammp.service, /usr/bin/systemctl restart beammp.service, /usr/bin/systemctl status beammp.service, /usr/bin/systemctl is-active beammp.service
+Cmnd_Alias BEAM_APPLIANCE_UPDATE = /usr/local/sbin/beam-appliance-apply-update
+beammanager ALL=(root) NOPASSWD: BEAMMP_SERVICE, BEAM_APPLIANCE_UPDATE

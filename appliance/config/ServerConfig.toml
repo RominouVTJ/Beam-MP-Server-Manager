@@ -1,0 +1,12 @@
+[General]
+Name = "BeamMP Server"
+Description = ""
+AuthKey = ""
+Private = true
+MaxPlayers = 8
+MaxCars = 1
+Map = "/levels/gridmap_v2/info.json"
+Tags = ""
+LogChat = true
+AllowGuests = true
+Port = 30814

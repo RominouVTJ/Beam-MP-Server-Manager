@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-theme-choice="system">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" id="theme-color" content="#090d11">
+  <title data-i18n="setup.title">BeamMP appliance setup</title>
+  <script>(()=>{try{const c=localStorage.getItem("beam-manager.theme.anonymous")||"system",d=matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.dataset.theme=c==="system"?(d?"dark":"light"):c;document.documentElement.dataset.themeChoice=c}catch{}})()</script>
+  <link rel="stylesheet" href="/assets/styles.css"><link rel="stylesheet" href="/assets/core.css"><link rel="stylesheet" href="/assets/setup.css">
+  <script src="/assets/i18n.js" defer></script><script src="/assets/setup.js" defer></script>
+</head>
+<body class="setup-body"><main class="setup-shell">
+<header class="setup-header"><div class="brand"><div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div><div><strong>BEAM</strong><small>SERVER MANAGER</small></div></div><div class="setup-preferences"><fieldset class="setup-themes"><legend data-i18n="theme.title">Theme</legend><button type="button" data-setup-theme="system" data-i18n="theme.system">System</button><button type="button" data-setup-theme="light" data-i18n="theme.light">Light</button><button type="button" data-setup-theme="dark" data-i18n="theme.dark">Dark</button></fieldset><label class="setup-language"><span data-i18n="common.language">Language</span><select id="setup-language"><option value="en">English</option><option value="fr">Français</option></select></label></div></header>
+<section class="setup-intro"><p class="eyebrow accent" data-i18n="setup.eyebrow">FIRST START</p><h1 data-i18n="setup.admin_heading">Create the administrator</h1><p data-i18n="setup.admin_only_intro">Create the first Web administrator. BeamMP and its AuthKey are configured later from the application.</p></section>
+<form class="setup-card" id="admin-setup-form">
+  <p class="security-warning" data-i18n="security.keep_code_warning">Keep the appliance security code. You will need it for account recovery and sensitive changes.</p>
+  <label class="field" id="pairing-code-field"><span data-i18n="security.code">Appliance security code</span><input name="pairing_code" maxlength="24" pattern="[A-Za-z2-9-]+" autocomplete="one-time-code" required></label>
+  <label class="field"><span data-i18n="login.username">Username</span><input name="username" minlength="3" maxlength="64" pattern="[A-Za-z0-9_.-]+" autocomplete="username" required></label>
+  <label class="field"><span data-i18n="login.password">Password</span><input name="password" type="password" minlength="12" maxlength="256" autocomplete="new-password" required></label>
+  <label class="field"><span data-i18n="setup.confirm_password">Confirm password</span><input name="confirmation" type="password" minlength="12" maxlength="256" autocomplete="new-password" required></label>
+  <p class="human-help" data-i18n="users.password_policy"></p>
+  <button class="primary-button" type="submit" data-i18n="setup.open_dashboard">Create administrator and open dashboard</button><span class="form-error" role="alert"></span>
+</form>
+</main></body></html>

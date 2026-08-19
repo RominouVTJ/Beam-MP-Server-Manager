@@ -1,0 +1,51 @@
+.venv/
+.runtime/
+.test-runtime/
+.pytest-tmp/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.env
+logs/
+data/
+build/
+dist/
+*.egg-info/
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs / runtime data
+*.log
+cache/
+backups/
+tmp/
+temp/
+
+# Secrets / certificates / SSH keys
+*.pem
+*.key
+*.p12
+*.pfx
+id_ed25519*
+id_rsa*
+beamappliance_ed25519*
+beamserver_ed25519*
+
+# Local environment files
+.env.*
+!.env.example
+
+# Generated archives / packages
+*.tar
+*.tar.gz
+*.7z
+
+# OS / editors
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
+# Local release artifacts
+release/

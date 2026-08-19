@@ -1,0 +1,16 @@
+[Unit]
+Description=Regenerate unique appliance identity after image deployment
+DefaultDependencies=no
+After=local-fs.target
+Before=ssh.service beam-appliance-firstboot.service
+ConditionPathExists=/var/lib/beam-appliance/identity-pending
+
+[Service]
+Type=oneshot
+# Fresh-image source may have crossed a Windows checkout before being installed.
+# Normalize CRLF here so the POSIX shebang cannot become /bin/sh\r and fail 203/EXEC.
+ExecStartPre=/bin/sed -i 's/\r$//' /usr/local/libexec/beam-appliance-regenerate-identity
+ExecStart=/usr/local/libexec/beam-appliance-regenerate-identity
+
+[Install]
+WantedBy=sysinit.target

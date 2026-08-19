@@ -1,0 +1,35 @@
+[Unit]
+Description=Beam-MP-Server-Manager
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=beammanager
+# BeamMP client ZIPs are shared with beammpserver through beamadmin. Using the
+# shared group as the Manager's primary runtime group makes newly created ZIPs
+# inherit beamadmin even on older appliances whose content directories predate
+# the setgid convention.
+Group=beamadmin
+SupplementaryGroups=beammanager
+WorkingDirectory=/
+EnvironmentFile=/etc/beam-manager/beam-manager.env
+# Do not execute the pip-generated console script here. Its shebang embeds the
+# absolute venv build path and is not relocatable when an update swaps
+# /opt/beam-manager.next into /opt/beam-manager.
+ExecStart=/opt/beam-manager/.venv/bin/python -m beam_manager.cli serve --host 0.0.0.0 --port 8765
+Restart=on-failure
+RestartSec=5s
+# sudo is restricted to exact BeamMP systemctl actions in /etc/sudoers.d/beam-manager.
+# NoNewPrivileges cannot be used here because it blocks sudo's required setuid transition.
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/opt/beam-manager
+ReadWritePaths=/var/lib/beam-manager /var/log/beam-manager /opt/beammp
+# Combined with Group=beamadmin, newly created shared files are 0660 rather
+# than 0640/0600 and stay readable by BeamMP after upload/replace/move.
+UMask=0007
+
+[Install]
+WantedBy=multi-user.target

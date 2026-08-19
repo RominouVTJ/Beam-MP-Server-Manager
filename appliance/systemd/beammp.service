@@ -1,0 +1,24 @@
+[Unit]
+Description=BeamMP Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=beammpserver
+Group=beammpserver
+SupplementaryGroups=beamadmin
+WorkingDirectory=/opt/beammp
+ExecCondition=/usr/local/libexec/beammp-authkey-configured
+ExecStart=/opt/beammp/BeamMP-Server
+Restart=on-failure
+RestartSec=10s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/beammp
+UMask=0007
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,132 @@
+#!/bin/sh
+set -eu
+
+CONFIRM="${1:-}"
+if [ "$(id -u)" -ne 0 ]; then
+    echo "Factory image preparation must run as root" >&2
+    exit 1
+fi
+if [ "$CONFIRM" != "--confirm-erase=BEAM-MP-SERVER-MANAGER" ]; then
+    echo "Refusing destructive reset without explicit confirmation" >&2
+    exit 2
+fi
+if [ ! -x /opt/beammp/BeamMP-Server ] || [ ! -d /opt/beam-manager/appliance ]; then
+    echo "This host does not look like a Beam-MP-Server-Manager appliance" >&2
+    exit 3
+fi
+
+# Never perform the destructive phase inside the invoking maintenance session.
+# The reset removes regular human accounts, so an SSH/sudo invocation would
+# otherwise terminate its own cgroup before identity cleanup and poweroff.
+if [ "${BEAM_APPLIANCE_FACTORY_RESET_WORKER:-0}" != "1" ]; then
+    SELF="$(/usr/bin/readlink -f "$0")"
+    UNIT="beam-appliance-factory-reset-$$"
+    /usr/bin/systemd-run --quiet --collect --unit="$UNIT" --on-active=3s \
+        /usr/bin/env BEAM_APPLIANCE_FACTORY_RESET_WORKER=1 \
+        "$SELF" "$CONFIRM"
+    /bin/echo "Beam-MP-Server-Manager factory image preparation scheduled in detached system service"
+    /bin/echo "The maintenance session may disconnect; the VM will power off automatically."
+    exit 0
+fi
+
+# Stop application-facing services before removing their state.
+/usr/bin/systemctl stop beammp.service beam-manager.service beam-appliance-status.service >/dev/null 2>/dev/null || true
+/usr/bin/systemctl stop lightdm.service >/dev/null 2>/dev/null || true
+
+# Reset BeamMP to the canonical blank configuration. The AuthKey is therefore removed
+# without ever reading or printing it.
+/usr/bin/install -o beammpserver -g beamadmin -m 0660 \
+    /opt/beam-manager/appliance/config/ServerConfig.toml \
+    /opt/beammp/ServerConfig.toml
+
+# Remove all user-provided BeamMP content while preserving the server-side Manager plugin.
+for path in /opt/beammp/Resources/Client /opt/beammp/DisabledMods /opt/beammp/Backups; do
+    if [ -d "$path" ]; then
+        /usr/bin/find "$path" -mindepth 1 -maxdepth 1 -exec /bin/rm -rf -- {} +
+    fi
+done
+
+# Reset Manager persistent state. A new DB and session secret are created on the next boot.
+/bin/rm -rf -- /var/lib/beam-manager/* /var/lib/beam-manager/.[!.]* /var/lib/beam-manager/..?* 2>/dev/null || true
+/usr/bin/install -d -o beammanager -g beammanager -m 0700 /var/lib/beam-manager
+/usr/bin/install -o beammanager -g beammanager -m 0640 \
+    /opt/beam-manager/appliance/config/appliance-state.json \
+    /var/lib/beam-manager/appliance-state.json
+/usr/bin/install -o root -g root -m 0644 \
+    /opt/beam-manager/appliance/config/beam-manager.env \
+    /etc/beam-manager/beam-manager.env
+
+# Reset the local First Run checkpoints and persisted choices.
+/bin/rm -f -- \
+    /var/lib/beam-appliance/firstboot-complete \
+    /var/lib/beam-appliance/firstboot-state.json \
+    /etc/beam-appliance/config.json
+
+# Reset the unprivileged graphical console profile so no saved XFCE session or
+# broken ownership can leak into the next appliance owner. Keep the product
+# autostart entry installed by provisioning.
+if /usr/bin/id beamconsole >/dev/null 2>/dev/null; then
+    /bin/rm -rf -- /home/beamconsole/.config/xfce4 /home/beamconsole/.cache/sessions 2>/dev/null || true
+    /usr/bin/install -d -o beamconsole -g beamconsole -m 0755 /home/beamconsole/.config
+    /bin/chown beamconsole:beamconsole /home/beamconsole/.config
+    /bin/chmod 0755 /home/beamconsole/.config
+    /usr/bin/install -d -o beamconsole -g beamconsole -m 0755 /home/beamconsole/.config/autostart
+fi
+
+# Neutral pre-First-Run locale/keyboard/timezone. The wizard will apply the user's choices.
+/bin/cat > /etc/default/keyboard <<'EOF'
+XKBMODEL="pc105"
+XKBLAYOUT="us"
+XKBVARIANT=""
+XKBOPTIONS=""
+BACKSPACE="guess"
+EOF
+/bin/cat > /etc/default/locale <<'EOF'
+LANG=C.UTF-8
+EOF
+/bin/ln -snf /usr/share/zoneinfo/UTC /etc/localtime
+/bin/echo UTC > /etc/timezone
+/bin/chmod 0644 /etc/default/keyboard /etc/default/locale /etc/timezone
+
+# Remove regular human accounts (UID >= 1000, excluding nobody) and their login material.
+REGULAR_USERS="$(/usr/bin/getent passwd | /usr/bin/awk -F: '$3 >= 1000 && $3 < 65534 {print $1}')"
+for account in $REGULAR_USERS; do
+    uid="$(/usr/bin/id -u "$account" 2>/dev/null || true)"
+    [ -n "$uid" ] || continue
+    /usr/bin/loginctl terminate-user "$account" >/dev/null 2>/dev/null || true
+    /usr/bin/pkill -KILL -u "$uid" >/dev/null 2>/dev/null || true
+    /usr/sbin/userdel --remove "$account" >/dev/null 2>/dev/null || /usr/sbin/userdel --force --remove "$account" >/dev/null 2>/dev/null || true
+done
+/bin/rm -rf -- /root/.ssh /root/.bash_history /root/.python_history 2>/dev/null || true
+/usr/bin/find /home -type f -path '*/.ssh/authorized_keys' -delete 2>/dev/null || true
+
+# Remove cloned machine identity, host SSH keys, random seeds and DHCP leases.
+/bin/rm -f -- /etc/ssh/ssh_host_* /var/lib/systemd/random-seed /var/lib/urandom/random-seed 2>/dev/null || true
+: > /etc/machine-id
+if [ -L /var/lib/dbus/machine-id ]; then
+    :
+elif [ -e /var/lib/dbus/machine-id ]; then
+    : > /var/lib/dbus/machine-id
+fi
+/bin/rm -f -- /var/lib/NetworkManager/*lease* /var/lib/dhcp/* /var/lib/systemd/network/*lease* 2>/dev/null || true
+
+# Remove transient/history material that must not be shipped in an appliance image.
+/bin/rm -rf -- /tmp/* /var/tmp/* 2>/dev/null || true
+/usr/bin/find /var/log -type f -name '*.log' -exec /usr/bin/truncate -s 0 {} \; 2>/dev/null || true
+/usr/bin/journalctl --rotate >/dev/null 2>/dev/null || true
+/usr/bin/journalctl --vacuum-size=1K >/dev/null 2>/dev/null || true
+/usr/bin/apt-get clean >/dev/null 2>/dev/null || true
+
+# Force the appliance contract for the next boot.
+/usr/bin/install -d -o root -g root -m 0700 /var/lib/beam-appliance
+/usr/bin/touch /var/lib/beam-appliance/identity-pending
+/usr/bin/chmod 0600 /var/lib/beam-appliance/identity-pending
+/usr/bin/systemctl enable beam-appliance-regenerate-identity.service beam-appliance-firstboot.service >/dev/null
+/usr/bin/systemctl enable beam-manager.service beammp.service beam-appliance-status.service lightdm.service >/dev/null
+/usr/bin/systemctl disable getty@tty2.service beam-appliance-console-activate.service >/dev/null 2>/dev/null || true
+/usr/bin/systemctl set-default graphical.target >/dev/null
+/usr/bin/systemctl mask getty@tty1.service >/dev/null 2>/dev/null || true
+
+/bin/sync
+/bin/echo "Beam-MP-Server-Manager factory image preparation complete; powering off"
+/usr/bin/systemctl --no-block poweroff
