@@ -16,8 +16,8 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     env:
-      BEAM_MANAGER_DATA_DIR: ${{ runner.temp }}/beam-manager
-      BEAM_MANAGER_SESSION_SECRET_FILE: ${{ runner.temp }}/beam-manager/session.secret
+      BEAM_MANAGER_DATA_DIR: .ci-data
+      BEAM_MANAGER_SESSION_SECRET_FILE: .ci-data/session.secret
 
     strategy:
       fail-fast: false
