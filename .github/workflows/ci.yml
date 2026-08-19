@@ -15,6 +15,10 @@ jobs:
     name: smoke (${{ matrix.os }}, py${{ matrix.python }})
     runs-on: ${{ matrix.os }}
 
+    env:
+      BEAM_MANAGER_DATA_DIR: ${{ runner.temp }}/beam-manager
+      BEAM_MANAGER_SESSION_SECRET_FILE: ${{ runner.temp }}/beam-manager/session.secret
+
     strategy:
       fail-fast: false
       matrix:
